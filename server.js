@@ -1,36 +1,22 @@
-//https://github.com/socketio/socket.io/blob/master/examples/chat/index.js
+// https://github.com/socketio/socket.io/blob/master/examples/chat/index.js
+const MiServer = require("mimi-server");
 const express = require("express");
-const app = express();
 const path = require("path");
-const os = require("os");
-const chalk = require("chalk");
-const server = require("http").createServer(app);
-const io = require("socket.io")(server);
 const { exec, fork } = require("child_process");
 
 const config = require("./config.json");
 config.dev ? exec("npm run build-dev") : exec("npm run build");
 
-if (!(config.port >= 0 && config.port < 65536 && config.port % 1 === 0)) {
-	console.error("[ERROR] `port` argument must be an integer >= 0 and < 65536. Default value will be used.");
-	config.port = 8080;
-}
 const port = process.env.PORT || config.port;
 
-server.listen(port, () => {
-	console.log(chalk.yellow("Server available on:"));
-	const ifaces = os.networkInterfaces();
-	Object.keys(ifaces).forEach(dev => {
-		ifaces[dev].forEach(details => {
-			if (details.family === 'IPv4') {
-				console.log((`  http://${details.address}:${chalk.green(port.toString())}`));
-			}
-		});
-	});
-	console.log("Hit CTRL-C to stop the server");
+const { app, server } = new MiServer({
+	port,
+	static: path.join(__dirname, "public")
 });
-//Routing
-app.use(express.static(path.join(__dirname, "public")));
+
+const io = require("socket.io")(server);
+
+// Routing
 app.use("/font", express.static(path.join(__dirname, "node_modules/@fortawesome/fontawesome-free")));
 
 const Game = require("./src/game-server");
@@ -59,6 +45,6 @@ setInterval(() => {
 
 for (let i = 0; i < parseInt(config.bots); i++) {
 	fork(path.join(__dirname, "paper-io-bot.js"), [`ws://localhost:${port}`], {
-		stdio: 'inherit'
+		stdio: "inherit"
 	});
 }

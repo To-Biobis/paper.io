@@ -3,12 +3,12 @@ function verifyRange() {
 		if (arguments[i] < 0 || arguments[i] > 1) throw new RangeError("H, S, L, and A parameters must be between the range [0, 1]");
 	}
 }
-//https://stackoverflow.com/a/9493060/7344257
+// https://stackoverflow.com/a/9493060/7344257
 function hslToRgb(h, s, l) {
 	let r, g, b;
 	if (s == 0) r = g = b = l; //Achromatic
 	else {
-		const hue2rgb = function hue2rgb(p, q, t) {
+		const hue2rgb = function(p, q, t) {
 			if (t < 0) t += 1;
 			if (t > 1) t -= 1;
 			if (t < 1 / 6) return p + (q - p) * 6 * t;
