@@ -15,7 +15,7 @@ function run(flag) {
 	}, flag);
 }
 
-$(document).ready(() => {
+$(() => {
 	const err = $("#error");
 	if (!window.WebSocket) {
 		err.text("Your browser does not support WebSockets!");
@@ -34,10 +34,10 @@ $(document).ready(() => {
 		socket.on("pongs", () => {
 			socket.disconnect();
 			err.text("All done, have fun!");
-			$("#name").keypress(evt => {
-				if (evt.which === 13) run();
+			$("#name").on("keypress", evt => {
+				if (evt.key === "Enter") run();
 			});
-			$(".start").removeAttr("disabled").click(evt => {
+			$(".start").removeAttr("disabled").on("click", evt => {
 				run();
 			});
 			$(".spectate").removeAttr("disabled").click(evt => {
@@ -50,7 +50,7 @@ $(document).ready(() => {
 	})();
 });
 //Event listeners
-$(document).keydown(e => {
+$(document).on("keydown", e => {
 	let newHeading = -1;
 	switch (e.key) {
 		case "w": case "ArrowUp":
