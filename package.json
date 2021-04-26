@@ -21,15 +21,15 @@
   },
   "homepage": "https://github.com/stevenjoezhang/paper.io",
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^5.15.1",
-    "jquery": "^3.5.1",
+    "@fortawesome/fontawesome-free": "^5.15.3",
+    "jquery": "^3.6.0",
     "mimi-server": "^0.0.1",
-    "socket.io": "^3.0.3",
-    "socket.io-client": "^3.0.3"
+    "socket.io": "^4.0.1",
+    "socket.io-client": "^4.0.1"
   },
   "devDependencies": {
     "browserify": "^17.0.0",
-    "terser": "^5.5.0",
-    "watchify": "^3.11.1"
+    "terser": "^5.7.0",
+    "watchify": "^4.0.0"
   }
 }
