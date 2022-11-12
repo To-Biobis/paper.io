@@ -1,8 +1,8 @@
-const core = require("./core");
-const { consts } = require("../config.json");
+import { Color, Grid, Player, initPlayer, updateFrame } from "./core/index.js";
+import { consts } from "../config.js";
 
 function Game(id) {
-	const possColors = core.Color.possColors();
+	const possColors = Color.possColors();
 	let nextInd = 0;
 	const players = [];
 	const gods = [];
@@ -10,7 +10,7 @@ function Game(id) {
 	const frameLocs = [];
 	let frame = 0;
 	let filled = 0;
-	const grid = new core.Grid(consts.GRID_COUNT, (row, col, before, after) => {
+	const grid = new Grid(consts.GRID_COUNT, (row, col, before, after) => {
 		if (!!after ^ !!before) {
 			if (after) filled++;
 			else filled--;
@@ -30,13 +30,13 @@ function Game(id) {
 			num: nextInd,
 			base: possColors.shift()
 		};
-		const p = new core.Player(grid, params);
+		const p = new Player(grid, params);
 		p.tmpHeading = params.currentHeading;
 		p.client = client;
 		players.push(p);
 		newPlayers.push(p);
 		nextInd++;
-		core.initPlayer(grid, p);
+		initPlayer(grid, p);
 		if (p.name.indexOf("[BOT]") == -1) console.log(`[${new Date()}] ${p.name || "Unnamed"} (${p.num}) joined.`);
 		client.on("requestFrame", () => {
 			if (p.frame === frame) return;
@@ -183,7 +183,7 @@ function Game(id) {
 
 	function update() {
 		const dead = [];
-		core.updateFrame(grid, players, dead);
+		updateFrame(grid, players, dead);
 		for (const p of dead) {
 			if (!p.handledDead) {
 				possColors.push(p.baseColor);
@@ -236,4 +236,4 @@ function findEmpty(grid) {
 	}
 	return (available.length === 0) ? null : available[Math.floor(available.length * Math.random())];
 }
-module.exports = Game;
+export default Game;

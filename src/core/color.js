@@ -100,7 +100,7 @@ Color.possColors = () => {
 	const SATS = [192, 150, 100].map(val => val / 240);
 	const HUES = [0, 10, 20, 25, 30, 35, 40, 45, 50, 60, 70, 100, 110, 120, 125, 130, 135, 140, 145, 150, 160, 170, 180, 190, 200, 210, 220].map(val => val / 240);
 	const possColors = new Array(SATS.length * HUES.length);
-	i = 0;
+	let i = 0;
 	for (let s = 0; s < SATS.length; s++) {
 		for (let h = 0; h < HUES.length; h++) {
 			possColors[i++] = new Color(HUES[h], SATS[s], .5, 1);
@@ -117,4 +117,4 @@ Color.possColors = () => {
 	return possColors;
 }
 
-module.exports = Color;
+export default Color;

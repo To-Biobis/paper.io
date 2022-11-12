@@ -1,7 +1,7 @@
-const Stack = require("./stack");
-const Color = require("./color");
-const Grid = require("./grid");
-const { consts } = require("../../config.json");
+import Stack from "./stack.js";
+import Color from "./color.js";
+import Grid from "./grid.js";
+import { consts } from "../../config.js";
 
 function defineGetter(getter) {
 	return {
@@ -415,4 +415,4 @@ function move(data) {
 	else if (this.posX % consts.CELL_WIDTH === 0 && this.posY % consts.CELL_WIDTH === 0) this.tail.addTail(heading);
 }
 
-module.exports = Player;
+export default Player;

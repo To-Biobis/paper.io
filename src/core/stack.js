@@ -25,4 +25,4 @@ function Stack(initSize) {
 		}
 	});
 }
-module.exports = Stack;
+export default Stack;

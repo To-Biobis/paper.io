@@ -27,7 +27,7 @@ After cloning this repository, run the follow commands to install dependencies a
 npm start
 ```
 
-You can configure the game by editing `config.json`.
+You can configure the game by editing `config.js`.
 
 ## Build
 
@@ -35,11 +35,11 @@ You can configure the game by editing `config.json`.
 npm run build
 ```
 
-**WARNING: Remember to build again after editing any file, include `config.json`.**
+**WARNING: Remember to build again after editing any file, include `config.js`.**
 
 ## Bots
 
-Set `bots` in `config.json` to a non-zero value, or execute the command below:
+Set `bots` in `config.js` to a non-zero value, or execute the command below:
 
 ```bash
 node paper-io-bot.js ws://localhost:8080

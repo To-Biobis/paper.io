@@ -3,9 +3,8 @@ if (process.argv.length < 3) {
 	process.exit(1);
 }
 
-const core = require("./src/core");
-const client = require("./src/game-client");
-const { consts } = require("./config.json");
+import * as client from "./src/game-client.js";
+import { consts } from "./config.js";
 
 const MOVES = [[-1, 0], [0, 1], [1, 0], [0, -1]];
 
@@ -65,7 +64,7 @@ function update(frame) {
         if (grid.get(row, col) === user) {
 			//When we are inside our territory
 			claim = [];
-			weights = [25, 25, 25, 25];
+			const weights = [25, 25, 25, 25];
 			weights[dir] = 100;
 			weights[mod(dir + 2)] = -9999;
 
@@ -115,8 +114,8 @@ function update(frame) {
 				const length = 4 * Math.random() + 2;
 				const ccw = 2 * Math.floor(2 * Math.random()) - 1;
 
-				turns = [dir, mod(dir + ccw), mod(dir + ccw * 2), mod(dir + ccw * 3)];
-				lengths = [breadth, length, breadth + 2 * Math.random() + 1, length];
+				const turns = [dir, mod(dir + ccw), mod(dir + ccw * 2), mod(dir + ccw * 3)];
+				const lengths = [breadth, length, breadth + 2 * Math.random() + 1, length];
 
 				for (let i = 0; i < turns.length; i++) {
 					for (let j = 0; j < lengths[i]; j++) {
@@ -131,7 +130,7 @@ function update(frame) {
 			claim = [];
 			//We are playing a little bit more cautious when we are outside and have a
 			//lot of land
-			weights = [5, 5, 5, 5];
+			const weights = [5, 5, 5, 5];
 			weights[dir] = 50;
 			weights[mod(dir + 2)] = -9999;
 
@@ -187,8 +186,8 @@ function calcFavorability(params) {
 	return params.portion + params.kills * 50 + params.survival / 100;
 }
 
-client.allowAnimation = false;
-client.renderer = {
+client.setAllowAnimation(false);
+client.setRenderer({
 	addPlayer: function(player) {
 		playerPortion[player.num] = 0;
 	},
@@ -206,11 +205,11 @@ client.renderer = {
 	setUser: function(u) {
 		user = u;
 	},
-	update: update,
+	update,
 	updateGrid: function(row, col, before, after) {
 		before && playerPortion[before.num]--;
 		after && playerPortion[after.num]++;
 	}
-};
+});
 
 connect();

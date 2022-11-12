@@ -1,9 +1,13 @@
-window.$ = window.jQuery = require("jquery");
-const io = require("socket.io-client");
-const client = require("./src/game-client");
+import jquery from "jquery";
+import io from "socket.io-client/dist/socket.io.js";
+import * as client from "./src/game-client";
+import godRenderer from "./src/mode/god";
+import * as playerRenderer from "./src/mode/player";
+
+const $ = jquery;
 
 function run(flag) {
-	client.renderer = flag ? require("./src/mode/god") : require("./src/mode/player");
+	client.setRenderer(flag ? godRenderer : playerRenderer);
 	client.connectGame("//" + location.host, $("#name").val(), (success, msg) => {
 		if (success) {
 			$("#main-ui").fadeIn(1000);

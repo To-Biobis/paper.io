@@ -1,33 +1,26 @@
-const io = require("socket.io-client");
-const core = require("./core");
-const { consts } = require("../config.json");
+import io from "socket.io-client";
+import { Grid, Player, initPlayer, updateFrame } from "./core/index.js";
+import { consts } from "../config.js";
 let running = false;
 let user, socket, frame;
 let players, allPlayers;
-let kills;
+let _kills;
 let timeout = undefined;
 let dirty = false;
 let deadFrames = 0;
 let requesting = -1; //Frame that we are requesting at
 let frameCache = []; //Frames after our request
-let allowAnimation = true;
-const grid = new core.Grid(consts.GRID_COUNT, (row, col, before, after) => {
+let _allowAnimation = true;
+const grid = new Grid(consts.GRID_COUNT, (row, col, before, after) => {
 	invokeRenderer("updateGrid", [row, col, before, after]);
 });
+let renderer;
 
-let mimiRequestAnimationFrame;
+let requestAnimationFrame;
 try {
-	if (window && window.document) {
-		mimiRequestAnimationFrame = window.requestAnimationFrame
-		|| window.webkitRequestAnimationFrame
-		|| window.mozRequestAnimationFrame
-		|| window.oRequestAnimationFrame
-		|| window.msRequestAnimationFrame
-		|| (callback => { window.setTimeout(callback, 1000 / 30) });
-	}
-}
-catch (e) {
-	mimiRequestAnimationFrame = callback => { setTimeout(callback, 1000 / 30) };
+	requestAnimationFrame = window.requestAnimationFrame;
+} catch {
+	requestAnimationFrame = callback => { setTimeout(callback, 1000 / 30) };
 }
 
 //Public API
@@ -58,7 +51,7 @@ function connectGame(url, name, callback, flag) {
 		reset();
 		//Load players
 		data.players.forEach(p => {
-			const pl = new core.Player(grid, p);
+			const pl = new Player(grid, p);
 			addPlayer(pl);
 		});
 		user = allPlayers[data.num];
@@ -156,8 +149,7 @@ function addPlayer(player) {
 }
 
 function invokeRenderer(name, args) {
-	const renderer = exports.renderer;
-	if (renderer && typeof renderer[name] === "function") renderer[name].apply(exports, args);
+	if (renderer && typeof renderer[name] === "function") renderer[name].apply(null, args);
 }
 
 function processFrame(data) {
@@ -177,9 +169,9 @@ function processFrame(data) {
 	if (data.newPlayers) {
 		data.newPlayers.forEach(p => {
 			if (user && p.num === user.num) return;
-			const pl = new core.Player(grid, p);
+			const pl = new Player(grid, p);
 			addPlayer(pl);
-			core.initPlayer(grid, pl);
+			initPlayer(grid, pl);
 		});
 	}
 	const found = new Array(players.length);
@@ -204,7 +196,7 @@ function processFrame(data) {
 		locs[p.num] = [p.posX, p.posY, p.waitLag];
 	}
 	dirty = true;
-	mimiRequestAnimationFrame(paintLoop);
+	requestAnimationFrame(paintLoop);
 	timeout = setTimeout(() => {
 		console.warn("Server has timed-out. Disconnecting.");
 		socket.disconnect();
@@ -218,11 +210,11 @@ function paintLoop() {
 	if (user && user.dead) {
 		if (timeout) clearTimeout(timeout);
 		if (deadFrames === 60) { //One second of frame
-			const before = allowAnimation;
-			allowAnimation = false;
+			const before = _allowAnimation;
+			_allowAnimation = false;
 			update();
 			invokeRenderer("paint", []);
-			allowAnimation = before;
+			_allowAnimation = before;
 			user = null;
 			deadFrames = 0;
 			return;
@@ -231,7 +223,7 @@ function paintLoop() {
 		deadFrames++;
 		dirty = true;
 		update();
-		mimiRequestAnimationFrame(paintLoop);
+		requestAnimationFrame(paintLoop);
 	}
 }
 
@@ -240,7 +232,7 @@ function reset() {
 	grid.reset();
 	players = [];
 	allPlayers = [];
-	kills = 0;
+	_kills = 0;
 	invokeRenderer("reset");
 }
 
@@ -251,8 +243,8 @@ function setUser(player) {
 
 function update() {
 	const dead = [];
-	core.updateFrame(grid, players, dead, (killer, other) => { //addKill
-		if (players[killer] === user && killer !== other) kills++;
+	updateFrame(grid, players, dead, (killer, other) => { //addKill
+		if (players[killer] === user && killer !== other) _kills++;
 	});
 	dead.forEach(val => {
 		console.log((val.name || "Unnamed") + " is dead");
@@ -261,30 +253,30 @@ function update() {
 	});
 	invokeRenderer("update", [frame]);
 }
-//Export stuff
-[connectGame, changeHeading, getUser, getPlayers, getOthers, disconnect].forEach(f => {
-	exports[f.name] = f;
-});
-Object.defineProperties(exports, {
-	allowAnimation: {
-		get: function() {
-			return allowAnimation;
-		},
-		set: function(val) {
-			allowAnimation = !!val;
-		},
-		enumerable: true
+
+function setRenderer(r) {
+	renderer = r;
+}
+
+function setAllowAnimation(allow) {
+	_allowAnimation = allow;
+}
+
+// Export stuff
+export { connectGame, changeHeading, getUser, getPlayers, getOthers, disconnect, setRenderer, setAllowAnimation };
+export const allowAnimation = {
+	get: function() {
+		return _allowAnimation;
 	},
-	grid: {
-		get: function() {
-			return grid;
-		},
-		enumerable: true
+	set: function(val) {
+		_allowAnimation = !!val;
 	},
-	kills: {
-		get: function() {
-			return kills;
-		},
-		enumerable: true
-	}
-});
+	enumerable: true
+};
+export { grid };
+export const kills = {
+	get: function() {
+		return _kills;
+	},
+	enumerable: true
+};

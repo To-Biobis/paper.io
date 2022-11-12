@@ -1,8 +1,8 @@
-/* global $ */
+import jquery from "jquery";
 
-const core = require("../core");
-const client = require("../game-client");
-const { consts } = require("../../config.json");
+import { Grid, Color } from "../core";
+import * as client from "../game-client";
+import { consts } from "../../config.js";
 
 const SHADOW_OFFSET = 5;
 const ANIMATE_FRAMES = 24;
@@ -14,6 +14,7 @@ const BAR_HEIGHT = SHADOW_OFFSET + consts.CELL_WIDTH;
 const BAR_WIDTH = 400;
 
 let canvas, ctx, offscreenCanvas, offctx, canvasWidth, canvasHeight, gameWidth, gameHeight;
+const $ = jquery;
 
 $(() => {
 	canvas = $("#main-ui")[0];
@@ -40,7 +41,7 @@ function updateSize() {
 }
 
 function reset() {
-	animateGrid = new core.Grid(consts.GRID_COUNT);
+	animateGrid = new Grid(consts.GRID_COUNT);
 	playerPortion = [];
 	portionsRolling = [];
 	barProportionRolling = [];
@@ -89,7 +90,7 @@ function paintGrid(ctx) {
 			if (client.allowAnimation && animateSpec) {
 				if (animateSpec.before) { //fading animation
 					const frac = (animateSpec.frame / ANIMATE_FRAMES);
-					const back = new core.Color(.58, .41, .92, 1);
+					const back = new Color(.58, .41, .92, 1);
 					baseColor = animateSpec.before.lightBaseColor.interpolateToString(back, frac);
 					shadowColor = animateSpec.before.shadowColor.interpolateToString(back, frac);
 				}
@@ -169,7 +170,7 @@ function paintUIBar(ctx) {
 		const name = player.name || "Unnamed";
 		const portion = barProportionRolling[player.num].lag;
 		const nameWidth = ctx.measureText(name).width;
-		barSize = Math.ceil((BAR_WIDTH - MIN_BAR_WIDTH) * portion + MIN_BAR_WIDTH);
+		const barSize = Math.ceil((BAR_WIDTH - MIN_BAR_WIDTH) * portion + MIN_BAR_WIDTH);
 		const barX = canvasWidth - barSize;
 		const barY = BAR_HEIGHT * i;
 		const offset = i == 0 ? 10 : 0;
@@ -298,7 +299,7 @@ function Rolling(value, frames) {
 	}
 }
 
-module.exports = exports = {
+export default {
 	addPlayer: function(player) {
 		playerPortion[player.num] = 0;
 		portionsRolling[player.num] = new Rolling(9 / consts.GRID_COUNT / consts.GRID_COUNT, ANIMATE_FRAMES);

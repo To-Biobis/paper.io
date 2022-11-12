@@ -7,9 +7,10 @@ if (process.argv.length < 3) {
 //TODO: add weight to the max land area and last land area, and also the number of kills
 //TODO: genetic gene pooling
 
-const core = require("./src/core");
-const client = require("./src/game-client");
-const { consts } = require("./config.json");
+import { Grid } from "./src/core";
+
+import client from "./src/game-client";
+import { consts } from "./config.js";
 
 const MOVES = [[-1, 0], [0, 1], [1, 0], [0, -1]];
 
@@ -167,7 +168,7 @@ function traverseGrid(dir) {
 }
 
 function printGrid() {
-	const chars = new core.Grid(consts.GRID_COUNT);
+	const chars = new Grid(consts.GRID_COUNT);
 	for (let r = 0; r < consts.GRID_COUNT; r++) {
 		for (let c = 0; c < consts.GRID_COUNT; c++) {
 			if (tail(user, {row: r, col: c})) chars.set(r, c, "t");
@@ -249,8 +250,8 @@ function calcFavorability(params) {
 	return params.portion + params.kills * 50 + params.survival / 100;
 }
 
-client.allowAnimation = false;
-client.renderer = {
+client.setAllowAnimation(false);
+client.setRenderer({
 	addPlayer: function(player) {
 		playerPortion[player.num] = 0;
 	},
@@ -278,6 +279,6 @@ client.renderer = {
 		before && playerPortion[before.num]--;
 		after && playerPortion[after.num]++;
 	}
-};
+});
 
 connect();

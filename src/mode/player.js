@@ -1,8 +1,8 @@
-/* global $ */
+import jquery from "jquery";
 
-const core = require("../core");
-const client = require("../game-client");
-const { consts } = require("../../config.json");
+import { Color, Grid } from "../core";
+import * as client from "../game-client";
+import { consts } from "../../config.js";
 
 const SHADOW_OFFSET = 5;
 const ANIMATE_FRAMES = 24;
@@ -14,6 +14,7 @@ const BAR_HEIGHT = SHADOW_OFFSET + consts.CELL_WIDTH;
 const BAR_WIDTH = 400;
 
 let canvas, ctx, offscreenCanvas, offctx, canvasWidth, canvasHeight, gameWidth, gameHeight;
+const $ = jquery;
 
 $(() => {
 	canvas = $("#main-ui")[0];
@@ -41,7 +42,7 @@ function updateSize() {
 }
 
 function reset() {
-	animateGrid = new core.Grid(consts.GRID_COUNT);
+	animateGrid = new Grid(consts.GRID_COUNT);
 	playerPortion = [];
 	portionsRolling = [];
 	barProportionRolling = [];
@@ -90,7 +91,7 @@ function paintGrid(ctx) {
 			if (client.allowAnimation && animateSpec) {
 				if (animateSpec.before) { //fading animation
 					const frac = (animateSpec.frame / ANIMATE_FRAMES);
-					const back = new core.Color(.58, .41, .92, 1);
+					const back = new Color(.58, .41, .92, 1);
 					baseColor = animateSpec.before.lightBaseColor.interpolateToString(back, frac);
 					shadowColor = animateSpec.before.shadowColor.interpolateToString(back, frac);
 				}
@@ -333,37 +334,42 @@ function Rolling(value, frames) {
 	}
 }
 
-module.exports = exports = {
-	addPlayer: function(player) {
-		playerPortion[player.num] = 0;
-		portionsRolling[player.num] = new Rolling(9 / consts.GRID_COUNT / consts.GRID_COUNT, ANIMATE_FRAMES);
-		barProportionRolling[player.num] = new Rolling(0, ANIMATE_FRAMES);
-	},
-	disconnect: function() {
-		$("#wasted").fadeIn(1000);
-	},
-	removePlayer: function(player) {
-		delete playerPortion[player.num];
-		delete portionsRolling[player.num];
-		delete barProportionRolling[player.num];
-	},
-	setUser: function(player) {
-		user = player;
-		centerOnPlayer(user, offset);
-	},
-	reset: reset,
-	updateGrid: function(row, col, before, after) {
-		//Keep track of areas
-		if (before) playerPortion[before.num]--;
-		if (after) playerPortion[after.num]++;
-		//Queue animation
-		if (before === after || !client.allowAnimation) return;
-		animateGrid.set(row, col, {
-			before: before,
-			after: after,
-			frame: 0
-		});
-	},
-	paint: paintDoubleBuff,
-	update: update
+export function addPlayer(player) {
+	playerPortion[player.num] = 0;
+	portionsRolling[player.num] = new Rolling(9 / consts.GRID_COUNT / consts.GRID_COUNT, ANIMATE_FRAMES);
+	barProportionRolling[player.num] = new Rolling(0, ANIMATE_FRAMES);
 };
+
+export function disconnect() {
+	$("#wasted").fadeIn(1000);
+};
+
+export function removePlayer(player) {
+	delete playerPortion[player.num];
+	delete portionsRolling[player.num];
+	delete barProportionRolling[player.num];
+};
+
+export function setUser(player) {
+	user = player;
+	centerOnPlayer(user, offset);
+};
+
+export { reset };
+
+export function updateGrid (row, col, before, after) {
+	//Keep track of areas
+	if (before) playerPortion[before.num]--;
+	if (after) playerPortion[after.num]++;
+	//Queue animation
+	if (before === after || !client.allowAnimation) return;
+	animateGrid.set(row, col, {
+		before: before,
+		after: after,
+		frame: 0
+	});
+};
+
+export { paintDoubleBuff as paint };
+
+export { update };
