@@ -170,7 +170,7 @@ function paintUIBar(ctx) {
 	ctx.fillText((userPortions * 100).toFixed(3) + "%", 5 + barOffset, consts.CELL_WIDTH - 5);
 
 	//Number of kills
-	const killsText = "Kills: " + client.kills;
+	const killsText = "Kills: " + client.getKills();
 	const killsOffset = 20 + BAR_WIDTH + barOffset;
 	ctx.fillText(killsText, killsOffset, consts.CELL_WIDTH - 5);
 

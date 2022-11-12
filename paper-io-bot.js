@@ -197,7 +197,7 @@ client.setRenderer({
 		startFrame = -1;
 
 		console.log(`[${new Date()}] I died... (survived for ${dt} frames.)`);
-		console.log(`[${new Date()}] I killed ${client.kills} player(s).`);
+		console.log(`[${new Date()}] I killed ${client.getKills()} player(s).`);
 		setTimeout(connect, 5000);
 	},
 	removePlayer: function(player) {

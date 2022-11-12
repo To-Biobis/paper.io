@@ -259,7 +259,7 @@ client.setRenderer({
 		const dt = (endFrame - startFrame);
 		startFrame = -1;
 		console.log(`[${new Date()}] I died... (survived for ${dt} frames.)`);
-		console.log(`[${new Date()}] I killed ${client.kills} player(s).`);
+		console.log(`[${new Date()}] I killed ${client.getKills()} player(s).`);
 		console.log("Coefficients: " + coeffs);
 
 		const mutation = Math.min(10, Math.pow(2, calcFavorability(params)));

@@ -3,7 +3,7 @@ import { consts } from "../config.js";
 let running = false;
 let user, socket, frame;
 let players, allPlayers;
-let _kills;
+let kills;
 let timeout = undefined;
 let dirty = false;
 let deadFrames = 0;
@@ -231,7 +231,7 @@ function reset() {
 	grid.reset();
 	players = [];
 	allPlayers = [];
-	_kills = 0;
+	kills = 0;
 	invokeRenderer("reset");
 }
 
@@ -243,7 +243,7 @@ function setUser(player) {
 function update() {
 	const dead = [];
 	updateFrame(grid, players, dead, (killer, other) => { //addKill
-		if (players[killer] === user && killer !== other) _kills++;
+		if (players[killer] === user && killer !== other) kills++;
 	});
 	dead.forEach(val => {
 		console.log((val.name || "Unnamed") + " is dead");
@@ -261,8 +261,12 @@ function setAllowAnimation(allow) {
 	_allowAnimation = allow;
 }
 
+function getKills() {
+	return kills;
+}
+
 // Export stuff
-export { connectGame, changeHeading, getUser, getPlayers, getOthers, disconnect, setRenderer, setAllowAnimation };
+export { connectGame, changeHeading, getUser, getPlayers, getOthers, disconnect, setRenderer, setAllowAnimation, getKills };
 export const allowAnimation = {
 	get: function() {
 		return _allowAnimation;
@@ -273,9 +277,3 @@ export const allowAnimation = {
 	enumerable: true
 };
 export { grid };
-export const kills = {
-	get: function() {
-		return _kills;
-	},
-	enumerable: true
-};
