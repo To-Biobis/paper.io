@@ -8,7 +8,7 @@ const $ = jquery;
 
 function run(flag) {
 	client.setRenderer(flag ? godRenderer : playerRenderer);
-	client.connectGame("//" + location.host, $("#name").val(), (success, msg) => {
+	client.connectGame(io, "//" + location.host, $("#name").val(), (success, msg) => {
 		if (success) {
 			$("#main-ui").fadeIn(1000);
 			$("#begin, #wasted").fadeOut(1000);

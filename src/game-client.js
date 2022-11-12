@@ -1,4 +1,3 @@
-import io from "socket.io-client";
 import { Grid, Player, initPlayer, updateFrame } from "./core/index.js";
 import { consts } from "../config.js";
 let running = false;
@@ -24,7 +23,7 @@ try {
 }
 
 //Public API
-function connectGame(url, name, callback, flag) {
+function connectGame(io, url, name, callback, flag) {
 	if (running) return; //Prevent multiple runs
 	running = true;
 	user = null;

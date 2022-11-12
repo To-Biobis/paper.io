@@ -3,6 +3,7 @@ if (process.argv.length < 3) {
 	process.exit(1);
 }
 
+import io from "socket.io-client";
 import * as client from "./src/game-client.js";
 import { consts } from "./config.js";
 
@@ -26,7 +27,7 @@ function connect() {
 	const prefixes = consts.PREFIXES.split(" ");
 	const names = consts.NAMES.split(" ");
 	const name = process.argv[3] || [prefixes[Math.floor(Math.random() * prefixes.length)], names[Math.floor(Math.random() * names.length)]].join(" ");
-	client.connectGame(process.argv[2], "[BOT] " + name, function(success, msg) {
+	client.connectGame(io, process.argv[2], "[BOT] " + name, function(success, msg) {
 		if (!success) {
 			console.error(msg);
 			setTimeout(connect, 1000);
