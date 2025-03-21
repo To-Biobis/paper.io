@@ -1,5 +1,7 @@
+// paper-io-bot.js – Verbesserte Version
+
 if (process.argv.length < 3) {
-	console.log("Usage: node paper-io-bot.js <socket-url> [<name>]")
+	console.log("Usage: node paper-io-bot.js <socket-url> [<name>]");
 	process.exit(1);
 }
 
@@ -7,27 +9,28 @@ import io from "socket.io-client";
 import * as client from "./src/game-client.js";
 import { consts } from "./config.js";
 
-const MOVES = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+const MOVES = [
+	[-1, 0], // oben
+	[0, 1],  // rechts
+	[1, 0],  // unten
+	[0, -1]  // links
+];
 
-let startFrame = -1;
-let endFrame = -1;
-let grid;
-let others;
-let user;
+let startFrame = -1, endFrame = -1;
+let grid, others, user;
 const playerPortion = {};
 let claim = [];
 
-function mod(x) {
-	x %= 4;
-	if (x < 0) x += 4;
-	return x;
-}
+// Hilfsfunktion: Korrekte Modulo-Berechnung für Richtungen
+const mod = x => ((x % 4) + 4) % 4;
 
 function connect() {
 	const prefixes = consts.PREFIXES.split(" ");
 	const names = consts.NAMES.split(" ");
-	const name = process.argv[3] || [prefixes[Math.floor(Math.random() * prefixes.length)], names[Math.floor(Math.random() * names.length)]].join(" ");
-	client.connectGame(io, process.argv[2], "[BOT] " + name, function(success, msg) {
+	const name =
+		process.argv[3] ||
+		`${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
+	client.connectGame(io, process.argv[2], "[BOT] " + name, (success, msg) => {
 		if (!success) {
 			console.error(msg);
 			setTimeout(connect, 1000);
@@ -36,151 +39,111 @@ function connect() {
 }
 
 function Loc(row, col) {
-	if (this.constructor != Loc) return new Loc(row, col);
-
 	this.row = row;
 	this.col = col;
 }
 
 function update(frame) {
-	if (startFrame == -1) startFrame = frame;
+	if (startFrame === -1) startFrame = frame;
 	endFrame = frame;
 
-	if (frame % 6 == (startFrame + 1) % 6) {
-        grid = client.grid;
-        others = client.getOthers();
+	// Aktualisiere alle 6 Frames synchronisiert
+	if (frame % 6 === (startFrame + 1) % 6) {
+		grid = client.grid;
+		others = client.getOthers();
+		const { row, col } = user;
+		let dir = user.currentHeading;
+		// Dynamisch anpassbarer Schwellenwert zur Flächenerfassung
+		const thres = (.05 + .1 * Math.random()) * consts.GRID_COUNT * consts.GRID_COUNT;
 
-        //Note: the code below isn't really my own code. This code is in fact the
-        //approximate algorithm used by the paper.io game. It has been modified from
-        //the original code (i.e. deobfuscating) and made more efficient in some
-        //areas (and some tweaks), otherwise, the original logic is about the same.
-        const row = user.row;
+		if (row < 0 || col < 0 || row >= consts.GRID_COUNT || col >= consts.GRID_COUNT) return;
 
-        const col = user.col;
-        let dir = user.currentHeading;
-        const thres = (.05 + .1 * Math.random()) * consts.GRID_COUNT * consts.GRID_COUNT;
-
-        if (row < 0 || col < 0 || row >= consts.GRID_COUNT || col >= consts.GRID_COUNT) return;
-
-        if (grid.get(row, col) === user) {
-			//When we are inside our territory
+		if (grid.get(row, col) === user) {
+			// Wenn wir in unserem Territorium sind
 			claim = [];
+			// Gewichte: Vorzugsrichtung wird stark bevorzugt, Rückwärtsbewegung wird bestraft
 			const weights = [25, 25, 25, 25];
 			weights[dir] = 100;
 			weights[mod(dir + 2)] = -9999;
 
-			for (var nd = 0; nd < 4; nd++) {
-				for (var S = 1; S < 20; S++) {
-					var nr = MOVES[nd][0] * S + row;
-					var nc = MOVES[nd][1] * S + col;
-
+			// Beurteile das Feld in allen vier Richtungen
+			for (let nd = 0; nd < 4; nd++) {
+				for (let S = 1; S < 20; S++) {
+					const nr = row + MOVES[nd][0] * S;
+					const nc = col + MOVES[nd][1] * S;
 					if (nr < 0 || nc < 0 || nr >= consts.GRID_COUNT || nc >= consts.GRID_COUNT) {
-						if (S > 1) weights[nd]--;
-						else weights[nd] = -9999;
-					}
-					else {
+						weights[nd] += S > 1 ? -1 : -9999;
+					} else {
 						if (grid.get(nr, nc) !== user) weights[nd]--;
-
-						var tailed = undefined;
-						for (var o of others) {
-							if (o.tail.hitsTail(new Loc(nr, nc))) {
-								tailed = o;
-								break;
-							}
-						}
-
-						if (tailed) {
-							if (o.name.indexOf("PAPER") != -1) weights[nd] += 3 * (30 - S); //Don't really try to kill our own kind
-							else weights[nd] += 30 * (30 - S);
+						// Prüfe, ob ein Gegner in der Nähe ist
+						const opponent = others.find(o => o.tail.hitsTail(new Loc(nr, nc)));
+						if (opponent) {
+							// Eigene Paper.io-Bots werden weniger aggressiv angegriffen
+							weights[nd] += opponent.name.indexOf("PAPER") !== -1 ? 3 * (30 - S) : 30 * (30 - S);
 						}
 					}
 				}
 			}
 
-			//View a selection of choices based on the weights we computed
-			var choices = [];
-			for (var d = 0; d < 4; d++) {
-				for (var S = 1; S < weights[d]; S++) {
+			// Wähle eine Richtung basierend auf den Gewichten
+			let choices = [];
+			for (let d = 0; d < 4; d++) {
+				for (let S = 1; S < Math.max(weights[d], 1); S++) {
 					choices.push(d);
 				}
 			}
-
-			if (choices.length === 0) choices.push(dir);
-			dir = choices[Math.floor(Math.random() * choices.length)];
-		}
-		else if (playerPortion[user.num] < thres) {
-			//Claim some land if we are relatively tiny and have little to risk.
-			if (claim.length === 0) {
+			dir = choices.length ? choices[Math.floor(Math.random() * choices.length)] : dir;
+		} else if (playerPortion[user.num] < thres) {
+			// Wenn unser Territorium noch klein ist, generiere einen Landnahmeplan
+			if (!claim.length) {
 				const breadth = 4 * Math.random() + 2;
 				const length = 4 * Math.random() + 2;
 				const ccw = 2 * Math.floor(2 * Math.random()) - 1;
-
 				const turns = [dir, mod(dir + ccw), mod(dir + ccw * 2), mod(dir + ccw * 3)];
 				const lengths = [breadth, length, breadth + 2 * Math.random() + 1, length];
-
-				for (let i = 0; i < turns.length; i++) {
+				turns.forEach((turn, i) => {
 					for (let j = 0; j < lengths[i]; j++) {
-						claim.push(turns[i]);
+						claim.push(turn);
 					}
-				}
+				});
 			}
-
-			if (claim.length !== 0) dir = claim.shift();
-		}
-		else {
+			dir = claim.shift();
+		} else {
+			// Wenn wir außerhalb unseres Territoriums sind, agiere vorsichtiger
 			claim = [];
-			//We are playing a little bit more cautious when we are outside and have a
-			//lot of land
 			const weights = [5, 5, 5, 5];
 			weights[dir] = 50;
 			weights[mod(dir + 2)] = -9999;
-
-			for (var nd = 0; nd < 4; nd++) {
-				for (var S = 1; S < 20; S++) {
-					var nr = MOVES[nd][0] * S + row;
-					var nc = MOVES[nd][1] * S + col;
-
+			for (let nd = 0; nd < 4; nd++) {
+				for (let S = 1; S < 20; S++) {
+					const nr = row + MOVES[nd][0] * S;
+					const nc = col + MOVES[nd][1] * S;
 					if (nr < 0 || nc < 0 || nr >= consts.GRID_COUNT || nc >= consts.GRID_COUNT) {
-						if (S > 1) weights[nd]--;
-						else weights[nd] = -9999;
-					}
-					else {
+						weights[nd] += S > 1 ? -1 : -9999;
+					} else {
+						// Vermeide den eigenen Schwanz
 						if (user.tail.hitsTail(new Loc(nr, nc))) {
-							if (S > 1) weights[nd] -= 50 - S;
-							else weights[nd] = -9999;
+							weights[nd] += S > 1 ? -(50 - S) : -9999;
 						}
-
+						// Bevorzugt das eigene Territorium
 						if (grid.get(nr, nc) === user) weights[nd] += 10 + S;
-
-						var tailed = undefined;
-						for (var o of others) {
-							if (o.tail.hitsTail(new Loc(nr, nc))) {
-								tailed = o;
-								break;
-							}
-						}
-
-						if (tailed) {
-							if (o.name.indexOf("PAPER") != -1) weights[nd] += 3 * (30 - S); //Don't really try to kill our own kind
-							else weights[nd] += 30 * (30 - S);
+						const opponent = others.find(o => o.tail.hitsTail(new Loc(nr, nc)));
+						if (opponent) {
+							weights[nd] += opponent.name.indexOf("PAPER") !== -1 ? 3 * (30 - S) : 30 * (30 - S);
 						}
 					}
 				}
 			}
-
-			//View a selection of choices based on the weights we computed
-			var choices = [];
-			for (var d = 0; d < 4; d++) {
-				for (var S = 1; S < weights[d]; S++) {
+			let choices = [];
+			for (let d = 0; d < 4; d++) {
+				for (let S = 1; S < Math.max(weights[d], 1); S++) {
 					choices.push(d);
 				}
 			}
-
-			if (choices.length === 0) choices.push(dir);
-			dir = choices[Math.floor(Math.random() * choices.length)];
+			dir = choices.length ? choices[Math.floor(Math.random() * choices.length)] : dir;
 		}
-        client.changeHeading(dir);
-    }
+		client.changeHeading(dir);
+	}
 }
 
 function calcFavorability(params) {
@@ -189,27 +152,26 @@ function calcFavorability(params) {
 
 client.setAllowAnimation(false);
 client.setRenderer({
-	addPlayer: function(player) {
+	addPlayer: player => {
 		playerPortion[player.num] = 0;
 	},
-	disconnect: function() {
-		const dt = (endFrame - startFrame);
+	disconnect: () => {
+		const dt = endFrame - startFrame;
 		startFrame = -1;
-
-		console.log(`[${new Date()}] I died... (survived for ${dt} frames.)`);
-		console.log(`[${new Date()}] I killed ${client.getKills()} player(s).`);
+		console.log(`[${new Date()}] Ich bin gestorben... (überlebt: ${dt} Frames.)`);
+		console.log(`[${new Date()}] Ich habe ${client.getKills()} Gegner eliminiert.`);
 		setTimeout(connect, 5000);
 	},
-	removePlayer: function(player) {
+	removePlayer: player => {
 		delete playerPortion[player.num];
 	},
-	setUser: function(u) {
+	setUser: u => {
 		user = u;
 	},
 	update,
-	updateGrid: function(row, col, before, after) {
-		before && playerPortion[before.num]--;
-		after && playerPortion[after.num]++;
+	updateGrid: (row, col, before, after) => {
+		if (before) playerPortion[before.num]--;
+		if (after) playerPortion[after.num]++;
 	}
 });
 
