@@ -1,7 +1,7 @@
 // paper-io-bot.js – Verbesserte Version
 
 if (process.argv.length < 3) {
-	console.log("Usage: node paper-io-bot.js <socket-url> [<name>]");
+	console.log("Usage: node paper-io-bot.js <socket-url> [<name>] [--two-player]");
 	process.exit(1);
 }
 
@@ -21,6 +21,9 @@ let grid, others, user;
 const playerPortion = {};
 let claim = [];
 
+// Prüfe ob 2-Spieler Modus aktiviert wurde
+const twoPlayerMode = process.argv.includes('--two-player');
+
 // Hilfsfunktion: Korrekte Modulo-Berechnung für Richtungen
 const mod = x => ((x % 4) + 4) % 4;
 
@@ -28,14 +31,17 @@ function connect() {
 	const prefixes = consts.PREFIXES.split(" ");
 	const names = consts.NAMES.split(" ");
 	const name =
-		process.argv[3] ||
+		process.argv[3] && !process.argv[3].startsWith('--') ?
+		process.argv[3] :
 		`${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
+	
 	client.connectGame(io, process.argv[2], "[BOT] " + name, (success, msg) => {
 		if (!success) {
 			console.error(msg);
-			setTimeout(connect, 1000);
+			// Im 2-Spieler Modus längere Wartezeit zwischen Verbindungsversuchen
+			setTimeout(connect, twoPlayerMode ? 5000 : 1000);
 		}
-	});
+	}, false, twoPlayerMode);
 }
 
 function Loc(row, col) {

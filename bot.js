@@ -1,13 +1,16 @@
 // Bot.js – Verbesserte Version
 
 if (process.argv.length < 3) {
-	console.log("Usage: node Bot.js <socket-url> [<name>]");
+	console.log("Usage: node Bot.js <socket-url> [<name>] [--two-player]");
 	process.exit(1);
 }
 
 import { Grid } from "./src/core";
 import client from "./src/game-client";
 import { consts } from "./config.js";
+
+// Prüfe ob 2-Spieler Modus aktiviert wurde
+const twoPlayerMode = process.argv.includes('--two-player');
 
 const MOVES = [
 	[-1, 0], // oben
@@ -78,14 +81,17 @@ function connect() {
 	const prefixes = consts.PREFIXES.split(" ");
 	const names = consts.NAMES.split(" ");
 	const name =
-		process.argv[3] ||
+		(process.argv[3] && !process.argv[3].startsWith('--')) ?
+		process.argv[3] :
 		`${prefixes[Math.floor(Math.random() * prefixes.length)]} ${names[Math.floor(Math.random() * names.length)]}`;
+	
 	client.connectGame(process.argv[2], "[BOT] " + name, (success, msg) => {
 		if (!success) {
 			console.error(msg);
-			setTimeout(connect, 1000);
+			// Im 2-Spieler Modus längere Wartezeit zwischen Verbindungsversuchen
+			setTimeout(connect, twoPlayerMode ? 5000 : 1000);
 		}
-	});
+	}, false, twoPlayerMode);
 }
 
 function Loc(row, col, step = 0) {

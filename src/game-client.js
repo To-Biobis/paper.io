@@ -23,7 +23,7 @@ try {
 }
 
 //Public API
-function connectGame(io, url, name, callback, flag) {
+function connectGame(io, url, name, callback, flag, twoPlayer) {
 	if (running) return; //Prevent multiple runs
 	running = true;
 	user = null;
@@ -45,7 +45,6 @@ function connectGame(io, url, name, callback, flag) {
 	socket.on("game", data => {
 		if (timeout != undefined) clearTimeout(timeout);
 		//Initialize game
-		//TODO: display data.gameid --- game id #
 		frame = data.frame;
 		reset();
 		//Load players
@@ -54,8 +53,16 @@ function connectGame(io, url, name, callback, flag) {
 			addPlayer(pl);
 		});
 		user = allPlayers[data.num];
-		//if (!user) throw new Error();
 		setUser(user);
+
+		if (data.twoPlayerMode) {
+			if (data.waitingForPlayer) {
+				console.info("Waiting for second player to join...");
+			} else {
+				console.info("Two player game started!");
+			}
+		}
+
 		//Load grid
 		const gridData = new Uint8Array(data.grid);
 		for (let r = 0; r < grid.size; r++) {
@@ -90,9 +97,10 @@ function connectGame(io, url, name, callback, flag) {
 	});
 	socket.emit("hello", {
 		name: name,
-		type: 0, //Free-for-all
-		gameid: -1, //Requested game-id, or -1 for anyone
-		god: flag
+		type: twoPlayer ? 1 : 0, //0 for Free-for-all, 1 for Two Player
+		gameid: -1,
+		god: flag,
+		twoPlayer: twoPlayer
 	}, (success, msg) => {
 		if (success) console.info("Connected to game!");
 		else {

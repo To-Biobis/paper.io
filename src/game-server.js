@@ -10,6 +10,9 @@ function Game(id) {
 	const frameLocs = [];
 	let frame = 0;
 	let filled = 0;
+	let isTwoPlayerMode = false;
+	let waitingForSecondPlayer = false;
+
 	const grid = new Grid(consts.GRID_COUNT, (row, col, before, after) => {
 		if (!!after ^ !!before) {
 			if (after) filled++;
@@ -17,11 +20,20 @@ function Game(id) {
 			if (filled === consts.GRID_COUNT * consts.GRID_COUNT) console.log(`[${new Date()}] FULL GAME`);
 		}
 	});
+
 	this.id = id;
-	this.addPlayer = (client, name) => {
-		if (players.length >= consts.MAX_PLAYERS) return false;
+	this.addPlayer = (client, name, twoPlayer) => {
+		if (twoPlayer && !waitingForSecondPlayer && players.length === 0) {
+			isTwoPlayerMode = true;
+			waitingForSecondPlayer = true;
+		}
+
+		if (isTwoPlayerMode && players.length >= 2) return false;
+		if (!isTwoPlayerMode && players.length >= consts.MAX_PLAYERS) return false;
+
 		const start = findEmpty(grid);
 		if (!start) return false;
+
 		const params = {
 			posX: start.col * consts.CELL_WIDTH,
 			posY: start.row * consts.CELL_WIDTH,
@@ -30,6 +42,7 @@ function Game(id) {
 			num: nextInd,
 			base: possColors.shift()
 		};
+
 		const p = new Player(grid, params);
 		p.tmpHeading = params.currentHeading;
 		p.client = client;
@@ -37,17 +50,31 @@ function Game(id) {
 		newPlayers.push(p);
 		nextInd++;
 		initPlayer(grid, p);
-		if (p.name.indexOf("[BOT]") == -1) console.log(`[${new Date()}] ${p.name || "Unnamed"} (${p.num}) joined.`);
+
+		if (p.name.indexOf("[BOT]") == -1) {
+			console.log(`[${new Date()}] ${p.name || "Unnamed"} (${p.num}) joined.`);
+			if (isTwoPlayerMode && waitingForSecondPlayer) {
+				console.log(`[${new Date()}] Waiting for second player...`);
+			}
+		}
+
+		if (isTwoPlayerMode && waitingForSecondPlayer && players.length === 2) {
+			waitingForSecondPlayer = false;
+			console.log(`[${new Date()}] Two player game started!`);
+		}
+
 		client.on("requestFrame", () => {
 			if (p.frame === frame) return;
-			p.frame = frame; //Limit number of requests per frame (One per frame)
+			p.frame = frame;
 			const splayers = players.map(val => val.serialData());
 			client.emit("game", {
 				"num": p.num,
 				"gameid": id,
 				"frame": frame,
 				"players": splayers,
-				"grid": gridSerialData(grid, players)
+				"grid": gridSerialData(grid, players),
+				"twoPlayerMode": isTwoPlayerMode,
+				"waitingForPlayer": waitingForSecondPlayer
 			});
 		});
 		client.on("frame", (data, errorHan) => {

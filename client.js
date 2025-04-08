@@ -6,7 +6,7 @@ import * as playerRenderer from "./src/mode/player";
 
 const $ = jquery;
 
-function run(flag) {
+function run(flag, twoPlayer) {
 	client.setRenderer(flag ? godRenderer : playerRenderer);
 	client.connectGame(io, "//" + location.host, $("#name").val(), (success, msg) => {
 		if (success) {
@@ -16,7 +16,7 @@ function run(flag) {
 		else {
 			$("#error").text(msg);
 		}
-	}, flag);
+	}, flag, twoPlayer);
 }
 
 $(() => {
@@ -43,6 +43,9 @@ $(() => {
 			});
 			$(".start").removeAttr("disabled").on("click", evt => {
 				run();
+			});
+			$(".two-player").removeAttr("disabled").on("click", evt => {
+				run(false, true);
 			});
 			$(".spectate").removeAttr("disabled").click(evt => {
 				run(true);
